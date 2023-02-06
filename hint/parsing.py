@@ -39,7 +39,7 @@ def to_paragraph_array(md_text):
 
     md_lines = md_text.split('\n')
     # filter not empty element
-    return [line for line in md_lines if line.strip()]
+    return [f'{line} |line|{md_lines[line]}' for line in range(len(md_lines))]
 
 
 def reduce_handler(tokens, c):

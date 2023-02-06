@@ -26,7 +26,7 @@ def check(text):
 def check_file(fn, ignore):
     '''check the error in mark down fn
     '''
-    with open(fn) as f:
+    with open(fn,encoding='utf-8') as f:
         text = f.read()
         errors = check(text)
         return utils.ignore_errorcode(errors, ignore)

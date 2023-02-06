@@ -27,6 +27,7 @@ class Error(object):
         self.text = text
         self.code = code
         self.index = index
+        self.fix=None
 
     def description(self):
         return errors.get(self.code, 'unknow')
