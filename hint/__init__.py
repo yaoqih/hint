@@ -9,11 +9,34 @@ from __future__ import absolute_import
 from hint import hint, utils,parsing
 from hint.utils import error_solution
 from hint.detector.error import errors as errors_describe
-
+import re
 __version__ = '1.0.4_fix'
 
 def check(text, ignore='', format='json', fn='anonymous',file_dir=None,format_output=None):
     '''check markdown text'''
+    ignore_dict = {}
+    # 1. 删除代码块
+    md_text = re.findall(r'```.*?(.*?)```',
+                     text, flags=re.I | re.S)
+    for code in md_text:
+        text=text.replace(f'```{code}```',f'+-|<>?{len(ignore_dict)}?<>|-+')
+        ignore_dict[f'+-|<>?{len(ignore_dict)}?<>|-+']=f'```{code}```'
+    # 2. 删除图片
+    md_text = re.findall(r'(\!\[.*?\]\(.*?\))',  text, flags=re.I|re.S)
+    for img_link in md_text:
+        text=text.replace(img_link,f'+-|<>?{len(ignore_dict)}?<>|-+')
+        ignore_dict[f'+-|<>?{len(ignore_dict)}?<>|-+']=f'{img_link}'
+    # 3. 提取链接内容
+    md_text = re.findall(r'(\[.*?\]\(.*?\))',  text, flags=re.I|re.S)
+    for link in md_text:
+        text=text.replace(link,f'+-|<>?{len(ignore_dict)}?<>|-+')
+        ignore_dict[f'+-|<>?{len(ignore_dict)}?<>|-+']=f'{link}'
+    # 4. 去除 ``
+    md_text = re.findall(r'`(.*?)`',  text, flags=re.I|re.S)
+    for code in md_text:
+        text=text.replace(code,f'+-|<>?{len(ignore_dict)}?<>|-+')
+        ignore_dict[f'+-|<>?{len(ignore_dict)}?<>|-+']=f'{code}'
+
     paragraphs=text.split('\n')
     err_ignore=[]
     for paragraph in range(len(paragraphs)):
@@ -25,6 +48,7 @@ def check(text, ignore='', format='json', fn='anonymous',file_dir=None,format_ou
                 if f'{errors[error].code}|{errors[error].index}' in err_ignore:
                     errors.pop(error)
             if len(errors)>0:
+                print(errors[0].format())
                 fix_text=error_solution(errors[0])
             else:
                 break
@@ -34,8 +58,11 @@ def check(text, ignore='', format='json', fn='anonymous',file_dir=None,format_ou
             elif select=='n' and f'{errors[0].code}|{errors[0].index}' not in err_ignore:
                 err_ignore.append(f'{errors[0].code}|{errors[0].index}')
     if format_output and file_dir:
+        text='\n'.join(paragraphs)
+        for ignore_replace in ignore_dict:
+            text=text.replace(ignore_replace,ignore_dict[ignore_replace])
         with open('.'.join(file_dir.split('.')[:-1]+['_fix']+[file_dir.split('.')[-1]]),'w',encoding='utf-8') as target_f:
-            target_f.write('\n'.join(paragraphs))
+            target_f.write(text)
     # check results
     errors = hint.check(text)
     # ignores
